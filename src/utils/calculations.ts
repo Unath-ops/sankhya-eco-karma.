@@ -1,53 +1,80 @@
+import { UserData, CalculationResult } from '../types';
+
 export const calculateEcoKarma = (data: UserData): CalculationResult => {
-  // 1. Calculate Gross Emissions (kg CO2)
-  const car = data.carKm * 0.19 * 365;
-  const bike = data.bikeKm * 0.08 * 365;
-  const elec = (data.elecBill / 8) * 0.82 * 12; // Assuming ₹8/unit
+  // --- 1. SAFELY Get Inputs (Fixes NaN) ---
+  // We use "|| 0" to force empty values to be zero.
+  const carKm = data.carKm || 0;
+  const bikeKm = data.bikeKm || 0;
+  const elecBill = data.elecBill || 0;
+  const plasticItems = data.plastic || 0; // Fixes the common crash here
   
-  // Diet Factors (Scientific but fair)
+  // --- 2. Calculate Gross Emissions (kg CO2) ---
+  const car = carKm * 0.19 * 365;
+  const bike = bikeKm * 0.08 * 365;
+  
+  // Energy (Assuming ₹8/unit -> kWh * 0.82kg * 12 months)
+  const elec = (elecBill / 8) * 0.82 * 12; 
+
+  // Diet Factors
   let diet = 0;
   if (data.diet === 'nonveg') diet = 1205;
   else if (data.diet === 'veg') diet = 620;
   else if (data.diet === 'vegan') diet = 365;
 
-  const plastic = data.plastic * 0.06 * 365;
-  const ac = data.ac ? 1460 : 0; // 4 hours/day approx
+  // Habits
+  const plastic = plasticItems * 0.06 * 365;
+  const ac = data.ac ? 1460 : 0; 
 
   const totalCO2 = car + bike + elec + diet + plastic + ac;
 
-  // 2. THE FIX: "Human Survival Allowance"
-  // The Planet can handle ~1500kg per person safely. We only punish excess.
+  // --- 3. THE FAIRNESS FIX ---
+  // Humans are allowed ~1500kg survival limit. We only count what is ABOVE that.
   const SAFE_LIMIT = 1500; 
   
-  // Net Excess Emissions (Cannot be negative)
+  // If total is less than limit, Excess is 0 (No negative numbers)
   const excessCO2 = Math.max(0, totalCO2 - SAFE_LIMIT);
 
-  // 3. Realistic Tree Math
-  // A mature tree absorbs ~22kg/year. 
-  // We use 50 as a "Gamified Divisor" to make the number achievable for students.
+  // --- 4. Tree Math ---
+  // Divide excess by 50 for a realistic goal
   const treesOwed = Math.ceil(excessCO2 / 50); 
 
-  // 4. Calculate Score (Start at 850, drop by 10 per tree)
-  // Cap the minimum score at 300
+  // --- 5. Score & Rank ---
+  // Start at 850, subtract points for debt. Min score 300.
   const score = Math.max(300, 850 - (treesOwed * 10));
 
-  // 5. Assign Rank based on score (not raw CO2)
   let rank: 'S' | 'A' | 'B' | 'C' | 'D' | 'F' = 'B';
-  
-  if (score >= 800) rank = 'S';       // Vegan/Walker (0-5 trees)
-  else if (score >= 700) rank = 'A';  // Good
-  else if (score >= 600) rank = 'B';  // Average
-  else if (score >= 500) rank = 'C';  // Warning
-  else if (score >= 400) rank = 'D';  // Bad
-  else rank = 'F';                    // Earth Villain
+  let roast = "You're basically an NPC. Not saving the world, not destroying it.";
+
+  if (score >= 850) {
+    rank = 'S';
+    roast = "GOD MODE UNLOCKED. You breathe cleaner air than a Himalayan monk.";
+  } else if (score >= 750) {
+    rank = 'A';
+    roast = "Respect. You're actually trying. Keep it up.";
+  } else if (score >= 600) {
+    rank = 'B';
+    roast = "You're average. The planet is 'meh' about you.";
+  } else if (score >= 500) {
+    rank = 'C';
+    roast = "You're on thin ice. Maybe walk more and eat less chicken?";
+  } else if (score >= 400) {
+    rank = 'D';
+    roast = "Bro, your carbon footprint is bigger than your future.";
+  } else {
+    rank = 'F';
+    // Savage specific roasts
+    if (data.ac) roast = "You sleep at 18°C while the world burns. Disgraceful.";
+    else if (carKm > 20) roast = "You drive everywhere? The ozone layer hates you personally.";
+    else if (data.diet === 'nonveg') roast = "Eating that much meat? You're basically chewing on the Amazon rainforest.";
+    else roast = "You are single-handedly speed-running the apocalypse.";
+  }
 
   return {
-    totalCO2,      // We still show their total impact
-    treesOwed,     // But trees are lower
+    totalCO2,
+    treesOwed,
     score,
     rank,
+    roast,
     breakdown: { transport: car + bike, energy: elec + ac, diet, habits: plastic }
   };
 };
-
-
