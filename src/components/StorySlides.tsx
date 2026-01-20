@@ -33,7 +33,7 @@ const GITA_VERSES = [
 ];
 
 export default function StorySlides({ data, results, onRestart }: Props) {
-  // 🔐 SAFETY GUARD
+  // SAFETY GUARD
   if (!results) return null;
 
   const [slideIndex, setSlideIndex] = useState(0);
@@ -54,17 +54,14 @@ export default function StorySlides({ data, results, onRestart }: Props) {
   const isWorse = results.totalCO2 > avgEmission;
 
   return (
-    <div className="h-screen w-full bg-black text-white relative overflow-hidden">
-
-      {/* FULLSCREEN TAP ZONE (FIXES MOBILE TAP ISSUE) */}
-      <button
+    <div className="h-screen w-full bg-black text-white overflow-hidden">
+      
+      {/* CONTENT CONTAINER — TAP ANYWHERE */}
+      <div
+        className="h-full w-full flex flex-col items-center justify-between p-6"
         onClick={nextSlide}
-        className="absolute inset-0 z-10 cursor-pointer"
-        aria-label="Next Slide"
-      />
-
-      {/* CONTENT */}
-      <div className="relative z-20 h-full w-full flex flex-col items-center justify-between p-6">
+        onTouchStart={nextSlide}
+      >
 
         {/* PROGRESS BAR */}
         <div className="absolute top-2 left-0 w-full flex gap-1 px-2">
@@ -207,16 +204,20 @@ export default function StorySlides({ data, results, onRestart }: Props) {
             </h3>
 
             <button
-              onClick={() =>
-                alert('Take a screenshot and share responsibly 🌱')
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                alert('Take a screenshot and share responsibly 🌱');
+              }}
               className="w-full bg-white text-black font-bold py-3 rounded-full mb-3 flex items-center justify-center gap-2"
             >
               <Share2 size={18} /> Share My Result
             </button>
 
             <button
-              onClick={onRestart}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRestart();
+              }}
               className="w-full bg-gray-800 text-white font-bold py-3 rounded-full flex items-center justify-center gap-2"
             >
               <RefreshCw size={18} /> Audit Another Person
