@@ -5,7 +5,6 @@ import { UserData, CalculationResult } from './types';
 import { calculateEcoKarma } from './utils/calculations';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'form' | 'results'>('form');
   const [userData, setUserData] = useState<UserData | null>(null);
   const [results, setResults] = useState<CalculationResult | null>(null);
 
@@ -13,26 +12,30 @@ function App() {
     const calculationResults = calculateEcoKarma(data);
     setUserData(data);
     setResults(calculationResults);
-    setCurrentView('results');
   };
 
   const handleRestart = () => {
-    setCurrentView('form');
     setUserData(null);
     setResults(null);
   };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
-      {currentView === 'form' ? (
+      
+      {/* SHOW FORM WHEN NO RESULTS */}
+      {!results && (
         <InputForm onCalculate={handleCalculate} />
-      ) : (
+      )}
+
+      {/* SHOW STORY ONLY WHEN RESULTS EXIST */}
+      {results && userData && (
         <StorySlides
-          userName={userData!.name}
-          results={results!}
+          data={userData}
+          results={results}
           onRestart={handleRestart}
         />
       )}
+
     </div>
   );
 }
